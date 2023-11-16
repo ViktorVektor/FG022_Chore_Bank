@@ -14,6 +14,7 @@
 #include <EEPROM.h>
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
+#include <XPT2046_Touchscreen.h> // Touchscreen for The Wavesaher screen
 #include <SPI.h>             // Arduino SPI library
 
 // Fonts
@@ -52,12 +53,19 @@
 #define TFT_BL  9  //Waveshare backlight
 // MOSI=11, MISO=12, SCK=13
 
+// For touchscreen
+#define TIRQ_PIN  3
+
+
 #define BLACK         0x0000      //.kbv hard-coded colors 
 #define RED           0xF800
 #define GREEN         0x07E0
 #define YELLOW        0xFFE0
-// instantiate tft 
+
+// instantiate the screen
 Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_BL);
+// instantiate the souchscreen
+XPT2046_Touchscreen ts(CS_PIN);
 
 // Card Reader
 #define B0            0 // TX as DigitalPin
@@ -76,10 +84,12 @@ Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_BL);
 
 // Internal Parameters
 #define Y_MAX         240
+#define Y_FONT_SIZE   14 // used for incrementing int the Y axis
 #define X_MAX         340
 #define BRIGHT_MAX    255
 #define LIGHT_MAX     255
-#define PAGE_LAST     20
+#define PAGE_LAST     1 // 2 for testing
+#define MAX_TASKS     38 // 38 items rn!
 
 // EEPROM Location for Tasks, task of 128
 /*
@@ -180,7 +190,8 @@ enum Pages  {TIME_P, BALANCE_P, INSERTED_P, MENU_P, TIME_SET_P, BRIGHTNESS_P, AB
 /*
   Global Variables
 */
-int pageNum = 0;
+int prevPage = 0;
+int pageNumber = 0;
 int screenBrightness = 127;
 int lightBrightness = 127;
 
@@ -189,17 +200,39 @@ void setup() {
   Serial.begin(9600);
   tft.init(240, 320, SPI_MODE0); //.kbv for ENES
   tft.setRotation(1);
-  tft.fillScreen(ILI9341_BLACK);
-  ts.begin();
-  ts.setRotation(1);
+  tft.fillScreen(BLACK);
   while (!Serial && (millis() <= 1000));
-  
+
+  //DisplayTask(0,0,1);
+  DisplayTaskPage(34*(pageNumber), 34*(pageNumber+1));
+
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   
+  // checks if the screen was touched
+  boolean isTouched = ts.touched();
 
+  if(isTouched)
+  {
+    TS_Point pointer = ts.getPoint();
+    if(p.x > X_MAX/2) // if the touch point was on the right side of the screen
+    {
+      
+    }
+  }
+
+  if(prevPage != pageNumber)
+  {
+    // updated pages on page change
+    delay(50); // button debounce
+    DisplayTaskPage(34*(pageNumber), 34*(pageNumber+1));
+    prevPage = pageNumber;
+
+  }
+
+  /*
   States state = TIME;
 
   switch (state)
@@ -219,7 +252,7 @@ void loop() {
     case ABOUT:
 
     default: state = 1;
-  }
+  }*/
 
 }
 
@@ -281,18 +314,23 @@ void TaskIncrement(int taskIndex)
 
 /*
   Returns the value stored for the corresponding task. Must also look at the second byte!
-
+  
   Input: The corresponding task index
 
   Output: long integer of task count, may be over 
 */
 long int GetTaskCount(int taskIndex)
 {
-  uint16_t tempValue = EEPROM.read(taskIndex+128); // read the MSB
-  tempValue <<= 8; // shift bits by 8
-  tempValue += EEPROM.read(taskIndex); // add the LSB
+  if(taskIndex > MAX_TASKS)
+    return 0;
+  else
+  {
+    uint16_t tempValue = EEPROM.read(taskIndex+128); // read the MSB
+    tempValue <<= 8; // shift bits by 8
+    tempValue += EEPROM.read(taskIndex); // add the LSB
 
-  return (long int)tempValue;
+    return (long int)tempValue;
+  }
 }
 
 /*
@@ -303,13 +341,19 @@ long int GetTaskCount(int taskIndex)
 */
 void DisplayTask(int xCoord, int yCoord, int taskIndex)
 {
-  String stringBuilder = taskNames[taskIndex] + ": " + GetTaskCount(taskIndex);
-  tft.setTextColor(YELLOW);
-  tft.setFont(Arial_48);
-  tft.setCursor(xCoord, yCoord);
+  // first black out the area to be written in, which is a 170 wide x 14 high box
+  tft.fillRect(xCoord, yCoord, X_MAX/2, Y_FONT_SIZE, BLACK);
 
-  // displays the text, expected: "HUG: 999"
-  tft.print(stringBuilder);
+  if(taskIndex < MAX_TASKS)
+  {
+    String stringBuilder = taskNames[taskIndex] + ": " + GetTaskCount(taskIndex);
+    tft.setTextColor(YELLOW);
+    //tft.setFont(Arial_48);
+    tft.setCursor(xCoord, yCoord);
+
+    // displays the text, expected: "HUG: 999"
+    tft.print(stringBuilder);
+  }
 }
 
 /*
@@ -317,7 +361,8 @@ void DisplayTask(int xCoord, int yCoord, int taskIndex)
   Uses DisplayTask, amountToDisplay must be adjusted to fit on the physical screen!
   Note: the screen is going to be sideways, so ensure that the coordinates are rotated
 
-  Input: int start of the index to look at, int of the amount of tasks to display on the page
+  Input: int start of the index to look at, int of the amount of tasks to display on the page.
+          ** Amount to Display is limited to 34!
 
   Output: void, writes directly to screen
 */
@@ -329,11 +374,11 @@ void DisplayTaskPage(int indexStart, int amountToDisplay)
   for(int i = 0; i < amountToDisplay; i++)
   {
     DisplayTask(xCoord, yCoord, indexStart+i);
-    if(yCoord < Y_MAX)
-      yCoord += 48; // font size is 48
+    if(yCoord < Y_MAX - Y_FONT_SIZE*2)
+      yCoord += Y_FONT_SIZE; // font size is 7 for textsize 1
     else
     {
-      yCoord = 0;
+      yCoord = 0; // back to first line
       xCoord += (X_MAX / 2); // move to the second half of the screen
     }
   }
@@ -377,15 +422,15 @@ void DisplayPage(int left, int right, int pageNumber)
 void ChangePage(int left, int right)
 {
   if(left == 1)
-    if(pageNum == 0)
-      pageNum = PAGE_LAST;
+    if(pageNumber == 0)
+      pageNumber = PAGE_LAST;
     else
-      pageNum -= 1;
+      pageNumber -= 1;
   if(right == 1)
-    if(pageNum == PAGE_LAST)
-      pageNum = 0;
+    if(pageNumber == PAGE_LAST)
+      pageNumber = 0;
     else
-      pageNum += 1;
+      pageNumber += 1;
 }
 
 /*
