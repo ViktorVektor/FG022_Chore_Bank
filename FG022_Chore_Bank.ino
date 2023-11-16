@@ -38,10 +38,20 @@
 
 */
 // TFT Display
+/*
+// For Arduino Pro Micro
 #define SCK           15 // SPI clock
 #define TFT_CS        10 // LCD_CS
 #define TFT_BL        9  // LCD_BL
 #define TFT_DC        8  // LCD_DC
+*/
+// For Arduino Uno
+#define CS_PIN  4  //Waveshare Touch
+#define TFT_DC  7  //Waveshare 
+#define TFT_CS 10  //Waveshare
+#define TFT_BL  9  //Waveshare backlight
+// MOSI=11, MISO=12, SCK=13
+
 #define BLACK         0x0000      //.kbv hard-coded colors 
 #define RED           0xF800
 #define GREEN         0x07E0
@@ -176,7 +186,14 @@ int lightBrightness = 127;
 
 void setup() {
   // put your setup code here, to run once:
-
+  Serial.begin(9600);
+  tft.init(240, 320, SPI_MODE0); //.kbv for ENES
+  tft.setRotation(1);
+  tft.fillScreen(ILI9341_BLACK);
+  ts.begin();
+  ts.setRotation(1);
+  while (!Serial && (millis() <= 1000));
+  
 }
 
 void loop() {
