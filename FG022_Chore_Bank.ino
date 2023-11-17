@@ -39,22 +39,28 @@
 
 */
 // TFT Display
-/*
+
 // For Arduino Pro Micro
-#define SCK           15 // SPI clock
+//#define SCK           15 // SPI clock
+    
 #define TFT_CS        10 // LCD_CS
-#define TFT_BL        9  // LCD_BL
-#define TFT_DC        8  // LCD_DC
-*/
+#define TFT_BL        8  // LCD_BL
+#define TFT_DC        9  // LCD_DC
+// SCK = 15, MISO = 14, MOSI = 16
+// For touchscreen
+#define TIRQ_PIN  7
+#define CS_PIN    A0
+/*
 // For Arduino Uno
 #define CS_PIN  4  //Waveshare Touch
 #define TFT_DC  7  //Waveshare 
 #define TFT_CS 10  //Waveshare
 #define TFT_BL  9  //Waveshare backlight
-// MOSI=11, MISO=12, SCK=13
-
 // For touchscreen
 #define TIRQ_PIN  3
+// MOSI=11, MISO=12, SCK=13
+*/
+
 
 // colours
 #define BLACK         0x0000
@@ -70,15 +76,16 @@ Adafruit_ST7789 tft(TFT_CS, TFT_DC, TFT_BL);
 XPT2046_Touchscreen ts(CS_PIN);
 
 // Card Reader
-/*
+
 #define B0            0 // TX as DigitalPin
 #define B1            1 // RX as DigitalPin
 #define B2            2
 #define B3            3
 #define B4            4
 #define B5            5
-#define B6            6*/
+#define B6            6
 
+/*
 // for Uno
 #define B0            A0 // TX as DigitalPin
 #define B1            A1 // RX as DigitalPin
@@ -87,7 +94,7 @@ XPT2046_Touchscreen ts(CS_PIN);
 #define B4            A4
 #define B5            A5
 #define B6            A6
-
+*/
 // Selector Buttons
 /*
 #define BUTTON_MENU   7
@@ -216,10 +223,6 @@ int lightBrightness = 127;
 int pointerX = 0;
 int pointerY = 0;
 
-int hour = 12;
-int minute = 30;
-int second = 15;
-
 void setup() {
   // put your setup code here, to run once:
   
@@ -228,18 +231,18 @@ void setup() {
   tft.init(240, 320, SPI_MODE0); // screen init
   ts.begin(); // touchscreen init
   tft.setRotation(1);
-  tft.fillScreen(BLACK);
   while (!Serial && (millis() <= 1000));
   
+  
+  pinMode(B0, INPUT);
+  pinMode(B1, INPUT);
+  pinMode(B2, INPUT);
+  pinMode(B3, INPUT);
+  pinMode(B4, INPUT);
+  pinMode(B5, INPUT);
+  pinMode(B6, INPUT);
+
   WaitPage(true);
-
-
-  //DisplayTask(0,0,1);
-  //DisplayTaskPage(34*(pageNumber), 34*(pageNumber+1));
-  
-  //Tasks(true);
-  //States state = WAIT;
-  
 
 }
 
@@ -251,52 +254,6 @@ States prevState = state;
 void loop() {
   // put your main code here, to run repeatedly:
   
-  // checks if the screen was touched
-  
-  //Tasks(isTouched);
-
-  /*
-  if(isTouched)
-  {
-    TS_Point pointer = ts.getPoint();
-    pointerX = pointer.x;
-    pointerY = pointer.y;
-
-    if(DEBUG)
-    {
-      Serial.print("Touched at x: ");
-      Serial.print(pointerX);
-      Serial.print(" y: ");
-      Serial.println(pointerY);
-    }
-
-    // left and right buttons are on the bottom left and bottom right respectively
-    // 4095 is the raw position on each axis, independent of the dislpay's actual 340x240 resolution
-    // this ifelse block here should go into a task datapath
-    if(pointer.y < TOUCH_RAW/2)
-      if(pointer.x > TOUCH_RAW/2) // if the touch point was on the right side of the screen
-        ChangePage(0, 1); // switch to next
-      else
-        ChangePage(1, 0); // switch to prev
-    else // top half
-      if(pointer.x > TOUCH_RAW/2) // if the touch point was on the right side of the screen
-        CardInserted(0);
-
-
-    wasTouched = isTouched;
-    pointerX = 0;
-    pointerY = 0;
-  }
-
-  // page change operation for tasks, go into task datapath
-  if(prevPage != pageNumber)
-    {
-      // updated pages on page change
-      delay(50); // button debounce
-      DisplayTaskPage(34*(pageNumber), 34*(pageNumber+1));
-      prevPage = pageNumber;
-    }
-  */
   if(DEBUG)
     if(millis() % 500 == 0)
       Serial.println(state);
@@ -315,6 +272,7 @@ void loop() {
       if(isTouched)
       {
         wasTouched = true;
+        Serial.println("Touched Wait");
         
         if(Quadrant() == RBOT || Quadrant() == LBOT)
         {
@@ -366,7 +324,7 @@ void loop() {
       break;
     case INCREMENT:
         long int cards = ReadCard(digitalRead(B0), digitalRead(B1), digitalRead(B2), digitalRead(B3), digitalRead(B4), digitalRead(B5), digitalRead(B6));
-        CardInserted(cards);
+        //CardInserted(cards);
         if(DEBUG)
           Serial.println("Card Inserted!");
         state = prevState;
@@ -576,42 +534,8 @@ void DisplayTaskPage(int indexStart, int amountToDisplay)
 
 */
 void Tasks(bool start)
-{
-  // defaults to zero, which is HUG ^-^
-  //long int cards = ReadCard(digitalRead(B0), digitalRead(B1), digitalRead(B2), digitalRead(B3), digitalRead(B4), digitalRead(B5), digitalRead(B6));
-  
-  // if a tap was registered on the screen
-    /*if(DEBUG)
-    {
-      Serial.print("Touched at x: ");
-      Serial.print(pointer.x);
-      Serial.print(" y: ");
-      Serial.println(pointer.y);
-    }*/
-
-    // left and right buttons are on the bottom left and bottom right respectively
-    // 4095 is the raw position on each axis, independent of the dislpay's actual 340x240 resolution
-    /*if(pointer.y < TOUCH_RAW/2)
-      if(pointer.x > TOUCH_RAW/2) // if the touch point was on the right side of the screen
-        ChangePage(0, 1); // switch to next
-      else
-        ChangePage(1, 0); // switch to prev*/
-    /*else // top half
-      if(pointer.x > TOUCH_RAW/2) // if the touch point was on the right side of the screen
-          if(cards >= 0)
-            CardInserted(cards);*/
-        
-    DisplayTaskPage(34*(pageNumber), 34*(pageNumber+1));
-    // page change operation for tasks, go into task datapath
-    /*if(prevPage != pageNumber)
-    {
-      // updated pages on page change
-      delay(50); // button debounce
-      DisplayTaskPage(34*(pageNumber), 34*(pageNumber+1));
-      prevPage = pageNumber;
-    }*/
-  
-  return true;
+{      
+  DisplayTaskPage(34*(pageNumber), 34*(pageNumber+1));
 }
 
 /*
@@ -677,11 +601,6 @@ void Menu(bool start)
   tft.setCursor(4,20);
   tft.print("Brightness");
 
-  // top right
-  /*
-  tft.setCursor(X_MAX/2, 4);
-  tft.print("Adjust Time");*/
-
   // bot left
   tft.setCursor(4, Y_MAX/2);
   tft.print("<<< Back");
@@ -715,36 +634,6 @@ void WaitPage(bool start)
   tft.print("<< Tap to Begin >>");
 
 }
-
-/*
-  Displays the time and handles the clock
-
-void TimePage(bool start)
-{
-  tft.fillScreen(GREEN);
-  tft.setTextColor(BLACK);
-  tft.setTextSize(2);
-
-  tft.setCursor(4, Y_MAX/2);
-  tft.fillRect(4, Y_MAX/2, Y_MAX, 14, GREEN);
-  tft.print(hour);
-  tft.print(":");
-  tft.print(minute);
-  tft.print(":");
-  tft.print(second);
-}*/
-
-/*
-  Advances or decrements time, then sets the device time. Note: will be reset upon restart
-
-  Input: button state of up, button state of down, button state of select
-
-  Output: void, sets the time counter directly
-
-void TimeSet(int up, int down, int advance)
-{
- asd 
-}*/
 
 
 
