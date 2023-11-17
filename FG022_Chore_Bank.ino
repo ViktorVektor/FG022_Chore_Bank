@@ -234,13 +234,13 @@ void setup() {
   while (!Serial && (millis() <= 1000));
   
   
-  pinMode(B0, INPUT);
-  pinMode(B1, INPUT);
-  pinMode(B2, INPUT);
-  pinMode(B3, INPUT);
-  pinMode(B4, INPUT);
-  pinMode(B5, INPUT);
-  pinMode(B6, INPUT);
+  pinMode(B0, INPUT_PULLUP);
+  pinMode(B1, INPUT_PULLUP);
+  pinMode(B2, INPUT_PULLUP);
+  pinMode(B3, INPUT_PULLUP);
+  pinMode(B4, INPUT_PULLUP);
+  pinMode(B5, INPUT_PULLUP);
+  pinMode(B6, INPUT_PULLUP);
 
   WaitPage(true);
 
@@ -323,8 +323,14 @@ void loop() {
       }
       break;
     case INCREMENT:
+        delay(50); // tap debounce
         long int cards = ReadCard(digitalRead(B0), digitalRead(B1), digitalRead(B2), digitalRead(B3), digitalRead(B4), digitalRead(B5), digitalRead(B6));
         //CardInserted(cards);
+        if(DEBUG)
+          Serial.println(taskNames[cards]);
+        if(DEBUG)
+          Serial.println(cards);
+        delay(1000);
         if(DEBUG)
           Serial.println("Card Inserted!");
         state = prevState;
@@ -359,7 +365,9 @@ void loop() {
 long int ReadCard(int b0, int b1, int b2, int b3, int b4, int b5, int b6)
 {
   // b0 is the LSB, b6 is the MSB
-  return (b6*64) + (b5*32) + (b4*16) + (b3*8) + (b2*4) + (b1*2) + (b0*1);
+  // buttons are active low, so need to flip in order to use for calculation
+  
+  return (!b6*64) + (!b5*32) + (!b4*16) + (!b3*8) + (!b2*4) + (!b1*2) + (!b0*1);
 }
 
 /*
