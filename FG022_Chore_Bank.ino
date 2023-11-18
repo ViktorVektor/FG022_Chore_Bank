@@ -25,7 +25,7 @@
 #define Arial_48 &FreeSans12pt7b
 #define Arial_60 &FreeSans18pt7b
 
-#define DEBUG true
+#define DEBUG false
 
 /*
   Board I/O for the Arduino Pro Micro 
@@ -297,7 +297,6 @@ void loop() {
       if(wasTouched)
       {
         wasTouched = false;
-        //Tasks(true);
       }
       if(isTouched)
       {
@@ -325,12 +324,11 @@ void loop() {
     case INCREMENT:
         delay(50); // tap debounce
         long int cards = ReadCard(digitalRead(B0), digitalRead(B1), digitalRead(B2), digitalRead(B3), digitalRead(B4), digitalRead(B5), digitalRead(B6));
-        //CardInserted(cards);
+        CardInserted(cards);
         if(DEBUG)
           Serial.println(taskNames[cards]);
         if(DEBUG)
           Serial.println(cards);
-        delay(1000);
         if(DEBUG)
           Serial.println("Card Inserted!");
         state = prevState;
@@ -420,7 +418,7 @@ void CardInserted(int taskIndex)
   tft.setTextSize(2);
   tft.setCursor(10, Y_MAX-(Y_FONT_SIZE*3)+14);
   tft.print("^-^ <3");
-  delay(3500); // delay for 5 seconds
+  delay(1500); // delay for 1.5 seconds
 }
 
 /*
@@ -642,9 +640,6 @@ void WaitPage(bool start)
   tft.print("<< Tap to Begin >>");
 
 }
-
-
-
 
 
 
