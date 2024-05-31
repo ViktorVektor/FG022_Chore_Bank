@@ -163,7 +163,8 @@ VIDEO_CALL,
 PASSENGER_PRINCESS, 
 PASSENGER_PRINCE, 
 DRUNK, 
-GET_HIGH
+GET_HIGH,
+BRING_SOJU
 };
 // String description of each task, see excel sheet for generating or updating the list
 const String taskNames[] = 
@@ -205,6 +206,7 @@ const String taskNames[] =
 "PASSENGER_PRINCE",
 "DRUNK",
 "GET_HIGH"
+"BRING_SOJU"
 };
 
 // States for each condition the device could be in 
